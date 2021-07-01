@@ -80,7 +80,7 @@ class Zume_DB_Upgrade {
             <thead>
             <tr>
                 <th><p style="max-width:450px"></p>
-                    <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade Ip Address Info</a></p>
+                    <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
                 </th>
             </tr>
             </thead>
@@ -133,9 +133,9 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
+        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM zume_vision_log" );
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results( "SELECT * FROM zume_vision_log", ARRAY_A );
 
         $loop_count = 0;
         $processed_count = 0;
@@ -148,13 +148,13 @@ class Zume_DB_Upgrade {
             $processed_count++;
 
             // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
-                continue;
-            }
+//            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
+//                continue;
+//            }
 
             $this->run_task( $result );
 
-            if ( $processed_count > 100 ) {
+            if ( $processed_count > 2000 ) {
                 break;
             }
         }
@@ -179,10 +179,131 @@ class Zume_DB_Upgrade {
     }
 
     public function run_task( $result ) {
+        $skip = [
+            'leading_','leading_1#s3', 'studying_20730', 'studying_20731', 'studying_20732','studying_20733',
+            'studying_20737', 'studying_20738', 'studying_20742', 'studying_20744', 'studying_20745', 'studying_20748', 'studying_20749', 'studying_20752',
+            'studying_20753', 'studying_20756', 'studying_20760'
+        ];
+        if ( in_array( $result['action'], $skip ) ) {
+            return;
+        }
 
-        /* @todo insert upgrade task */
+        if( empty( $result['language'] ) ) {
+            $language = 'en';
+            $language_name = 'English';
+        } else {
+            $language =  $result['language'];
+            $language_name = strtoupper( $result['language'] );
+        }
+
+        $action = '';
+        $session = '';
+        $category = '';
+        if ( $this->startsWith( $result['action'], 'leading'  ) ) {
+            $action = $result['action'];
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $category = 'leading';
+        }
+        else if ( $this->startsWith( $result['action'], 'studied'  ) ) {
+            $action = $result['action'];
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $category = 'studying';
+        }
+        else if ( $this->startsWith( $result['action'], 'joined_community'  ) ) {
+            $action = 'zume_vision';
+            $session = '';
+            $category = 'joining';
+        }
+        else if ( $this->startsWith( $result['action'], 'registered'  ) ) {
+            $action = 'zume_training';
+            $session = '';
+            $category = 'joining';
+        }
+        else if ( $this->startsWith( $result['action'], 'requested_coach'  ) ) {
+            $action = 'coaching';
+            $session = '';
+            $category = 'joining';
+        }
+        else if ( $this->startsWith( $result['action'], 'updated_3_month'  ) ) {
+            $action = 'updated_3_month';
+            $session = '';
+            $category = 'committing';
+        }
+        else if ( $this->startsWith( $result['action'], 'started_group'  ) ) {
+            $action = 'starting_group';
+            $session = '';
+            $category = 'leading';
+        }
+        else {
+            dt_write_log('DID NOT FIND ACTION');
+            dt_write_log($result['id']);
+        }
 
 
+        $payload = maybe_serialize( [
+            'language_code' => $language,
+            'language_name' => $language_name,
+            'session' => $session,
+            'group_size' => $result['group_size'],
+            'note' => $result['note'],
+            'location_type' => 'ip',
+            'country' => $result['country'],
+            'unique_id' => $result['hash'],
+        ] );
+        $site_id = get_option('dt_site_id');
+        $lng = $result['lng'];
+        $lat = $result['lat'];
+        $level = $result['level'];
+        $label = $result['label'];
+        $grid_id = $result['grid_id'];
+        $timestamp = $result['timestamp'];
+        $hash = $result['hash'];
+
+
+        global $wpdb;
+        $wpdb->query("
+        INSERT INTO wp_3_dt_movement_log
+        (
+         site_id,
+         site_record_id,
+         site_object_id,
+         action,
+         category,
+         lng,
+         lat,
+         level,
+         label,
+         grid_id,
+         payload,
+         timestamp,
+         hash
+        )
+        VALUES
+        (
+         '$site_id',
+         NULL,
+         NULL,
+         '$action',
+         '$category',
+         '$lng',
+         '$lat',
+         '$level',
+         '$label',
+         '$grid_id',
+         '$payload',
+         '$timestamp',
+         '$hash'
+        )
+        ");
+
+        dt_write_log($result['id'] . ' - ' . $wpdb->rows_affected);
+
+
+    }
+    public function startsWith ($string, $startString)
+    {
+        $len = strlen($startString);
+        return (substr($string, 0, $len) === $startString);
     }
 
     /**
