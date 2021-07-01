@@ -1,11 +1,11 @@
 <?php
 /**
- * Plugin Name: Zume DB Upgrade
- * Plugin URI: https://github.com/DiscipleTools/disciple-tools-one-page-extension
- * Description: One page extension of Disciple Tools
+ * Plugin Name: Zume DB Upgrader
+ * Plugin URI: https://github.com/ChrisChasm/zume-db-upgrader
+ * Description: Reusable upgrader for Zume maintenance
  * Version:  0.1.0
  * Author URI: https://github.com/DiscipleTools
- * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-one-page-extension
+ * GitHub Plugin URI: https://github.com/ChrisChasm/zume-db-upgrader
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
  * Tested up to: 5.3
@@ -127,9 +127,15 @@ class Zume_DB_Upgrade {
     }
 
     public function run_loop( $step ){
+        /**
+         * The loop will skip early records until it reaches the step start number, then it will process 100, and then
+         * it will start a new loop sending the new start number.
+         */
         global $wpdb;
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" );
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A );
+        // Get total count of records to process
+        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
+        // Get all records to process
+        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
 
         $loop_count = 0;
         $processed_count = 0;
@@ -141,7 +147,8 @@ class Zume_DB_Upgrade {
 
             $processed_count++;
 
-            if ( get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){ // repetition check
+            // check if already upgraded. if so, skip. Insert the marker to check for.
+            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
                 continue;
             }
 
@@ -172,38 +179,9 @@ class Zume_DB_Upgrade {
     }
 
     public function run_task( $result ) {
-        if ( empty( $result['meta_value'] ) ){
-            return;
-        }
 
-        $ip_result = unserialize( $result['meta_value'] );
-        $user_id = $result['user_id'];
+        /* @todo insert upgrade task */
 
-        $country = DT_Ipstack_API::parse_raw_result( $ip_result, 'country_name' );
-        $region = DT_Ipstack_API::parse_raw_result( $ip_result, 'region_name' );
-        $city = DT_Ipstack_API::parse_raw_result( $ip_result, 'city' );
-        if ( empty( $city ) ) {
-            dt_write_log('Geocode required ' . $user_id );
-            $ip_address = get_user_meta( $user_id, 'zume_recent_ip', true );
-            $ip_result = DT_Ipstack_API::geocode_ip_address( $ip_address );
-
-            $country = DT_Ipstack_API::parse_raw_result( $ip_result, 'country_name' );
-            $region = DT_Ipstack_API::parse_raw_result( $ip_result, 'region_name' );
-            $city = DT_Ipstack_API::parse_raw_result( $ip_result, 'city' );
-
-            if ( empty( $city ) ) {
-                dt_write_log('Could not geocode ' . $user_id );
-                return;
-            }
-            update_user_meta( $user_id, 'zume_raw_location_from_ip', $ip_result );
-        }
-        $address = $city . ', ' . $region . ', ' . $country;
-        update_user_meta( $user_id, 'zume_address_from_ip', $address ); // location grid id only
-
-
-        $location_grid_meta = DT_Ipstack_API::convert_ip_result_to_location_grid_meta( $ip_result );
-        update_user_meta( $user_id, 'zume_location_grid_meta_from_ip', $location_grid_meta ); // location grid meta array
-        update_user_meta( $user_id, 'zume_location_grid_from_ip', $location_grid_meta['grid_id'] ); // location grid id only
 
     }
 
