@@ -226,9 +226,6 @@ return;
             $country_name = '';
         }
 
-
-
-        $group_id = $result['group_id'];
         $page = $result['page'];
 
         $lang_code = get_user_meta( $user_id, 'zume_language', true );
@@ -236,8 +233,8 @@ return;
             $language = $lang_code;
             $language_name = $this->working_languages[$lang_code]['label'];
         } else {
-            $language =  $result['language'];
-            $language_name = strtoupper( $result['language'] );
+            $language =  'en';
+            $language_name = 'English';
         }
 
         $action = '';
@@ -261,19 +258,22 @@ return;
             $group_size = str_replace('_', '', substr( $result['meta'], -2, 2 ) );
             $category = 'leading';
         }
-        else if ( $this->startsWith( $result['action'], 'update_three_month_plan'  ) ) {
-            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
-            $action = 'leading_' . $session;
-            $group_size = str_replace('_', '', substr( $result['meta'], -2, 2 ) );
+        else if ( $this->startsWith( $result['action'], 'create_group'  ) ) {
+            $session = '';
+            $action = 'starting_group';
+            $group_size = '';
             $category = 'leading';
+        }
+        else if ( $this->startsWith( $result['action'], 'update_three_month_plan'  ) ) {
+            $action = 'updated_3_month';
+            $session = '';
+            $category = 'committing';
+            $group_size = '';
         }
         else {
             dt_write_log('DID NOT FIND ACTION');
             dt_write_log($result['id']);
         }
-
-
-
 
         $payload = maybe_serialize( [
             'language_code' => $language,
@@ -286,7 +286,7 @@ return;
             'unique_id' => dt_create_unique_key(),
         ] );
 
-        $site_id = get_option('dt_site_id');
+        $site_id = 'be51c701162c8b66d285b9831644bcf3432ecee4bb44fb891ad07d3b0b90948a';
         $timestamp = strtotime( $created_date );
         $hash = dt_create_unique_key();
 
@@ -325,7 +325,7 @@ return;
         )
         ");
 
-//        dt_write_log($result['id'] . ' - ' . $wpdb->rows_affected);
+        dt_write_log($wpdb->last_query);
 
 
     }
