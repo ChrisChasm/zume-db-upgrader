@@ -141,9 +141,9 @@ class Zume_DB_Upgrade {
 
             $processed_count++;
 
-            if ( get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){ // repetition check
-                continue;
-            }
+//            if ( get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){ // repetition check
+//                continue;
+//            }
 
             $this->run_task( $result );
 
