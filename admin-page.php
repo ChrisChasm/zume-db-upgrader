@@ -240,7 +240,7 @@ return;
         $action = '';
         $session = '';
         $category = '';
-        $group_size = '';
+        $group_size = 1;
         if ( $this->startsWith( $result['action'], 'registered'  ) ) {
             $action = 'zume_training';
             $session = '';
@@ -258,21 +258,28 @@ return;
             $group_size = str_replace('_', '', substr( $result['meta'], -2, 2 ) );
             $category = 'leading';
         }
+        else if ( $this->startsWith( $result['action'], 'session'  ) && 'course' === $page && $this->startsWith( $result['meta'], 'explore'  )) {
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $action = 'leading_' . $session;
+            $group_size = 1;
+            $category = 'studying';
+        }
         else if ( $this->startsWith( $result['action'], 'create_group'  ) ) {
             $session = '';
             $action = 'starting_group';
-            $group_size = '';
+            $group_size = 1;
             $category = 'leading';
         }
         else if ( $this->startsWith( $result['action'], 'update_three_month_plan'  ) ) {
             $action = 'updated_3_month';
             $session = '';
             $category = 'committing';
-            $group_size = '';
+            $group_size = 1;
         }
         else {
             dt_write_log('DID NOT FIND ACTION');
             dt_write_log($result['id']);
+            return;
         }
 
         $payload = maybe_serialize( [
