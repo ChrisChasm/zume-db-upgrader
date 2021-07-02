@@ -133,9 +133,9 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
+        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'", ARRAY_A ); // @todo replace
 
         $loop_count = 0;
         $processed_count = 0;
@@ -154,7 +154,7 @@ class Zume_DB_Upgrade {
 
             $this->run_task( $result );
 
-            if ( $processed_count > 100 ) {
+            if ( $processed_count > 1000 ) {
                 break;
             }
         }
@@ -179,9 +179,39 @@ class Zume_DB_Upgrade {
     }
 
     public function run_task( $result ) {
+        $array = maybe_unserialize( $result['meta_value'] );
+//        dt_write_log($result['meta_key']);
 
-        /* @todo insert upgrade task */
+        if ( $array['session_9'] || $array['session_10'] ) {
+//            dt_write_log('');
+//            dt_write_log('Completed');
+//            dt_write_log('');
+            update_user_meta( $result['user_id'], 'zume_training_complete', $result['meta_key'] );
 
+            if ( ! empty( $array['coleaders'] ) ) {
+//                dt_write_log('');
+//                dt_write_log('Has Coleaders');
+//                dt_write_log('');
+                foreach( $array['coleaders'] as $email ) {
+                    $user = get_user_by('email', $email );
+
+                    if ( ! $user ) {
+//                        dt_write_log('Not Found: ' . $email );
+                        continue;
+                    }
+
+                    if ( get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
+//                        dt_write_log('Already registered as complete: ' . $email );
+                        continue;
+                    }
+
+//                    dt_write_log('Logged as completed: ' . $email );
+                    update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
+
+                }
+
+            }
+        }
 
     }
 
