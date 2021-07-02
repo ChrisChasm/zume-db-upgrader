@@ -154,7 +154,7 @@ class Zume_DB_Upgrade {
 
             $this->run_task( $result );
 
-            if ( $processed_count > 10000 ) {
+            if ( $processed_count > 100 ) {
                 break;
             }
         }
@@ -185,63 +185,49 @@ class Zume_DB_Upgrade {
 
         $owner_id = $result['user_id'];
 
-        if ( $array['session_9'] || $array['session_10'] ) {
-            if ( ! empty( $array['coleaders'] ) ) {
-                foreach( $array['coleaders'] as $email ) {
-                    $user = get_user_by('email', $email );
+        if ( ! get_user_meta( $owner_id, 'zume_recent_ip', true ) ) {
+            if ( '204 E Chestnut St, Independence, Kansas 67301, United States' === $array['address']) {
 
-                    if ( ! $user ) {
-                        continue;
-                    }
+                $location_grid_meta = [
+                    'lng' => -98.5556,
+                    'lat' => 39.8097,
+                    'level' => 'admin0',
+                    'label' => 'United States',
+                    'grid_id' => 100364199,
+                ];
 
-                    dt_write_log( $email );
+                update_user_meta( $owner_id, 'zume_location_grid_meta_from_ip', $location_grid_meta );
+                update_user_meta( $owner_id, 'zume_location_grid_from_ip', 100364199 );
+                update_user_meta( $owner_id, 'zume_address_from_ip', 'United States' );
 
-                    if ( ! get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
-                        dt_write_log( 'zume_training_complete' );
-                        update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
-                    }
+            } else {
+                $mbresult = DT_Mapbox_API::forward_lookup( $array['address'] );
 
-                    if ( ! get_user_meta( $user->ID, 'zume_address_from_ip', true ) ) {
-                        $value = get_user_meta( $owner_id, 'zume_address_from_ip', true );
-                        if ( ! $value ) {
-                            dt_write_log($email .  ' : zume_address_from_ip' );
-                            update_user_meta( $user->ID, 'zume_address_from_ip', $value );
-                        }
-                    }
+                $lng = DT_Mapbox_API::parse_raw_result($mbresult, 'lng');
+                $lat = DT_Mapbox_API::parse_raw_result($mbresult, 'lat');
 
-                    if ( ! get_user_meta( $user->ID, 'zume_location_grid_meta_from_ip', true ) ) {
-                        $value = get_user_meta( $owner_id, 'zume_location_grid_meta_from_ip', true );
-                        if ( ! $value ) {
-                            dt_write_log( $email .  ' : zume_location_grid_meta_from_ip' );
-                            update_user_meta( $user->ID, 'zume_location_grid_meta_from_ip', $value );
-                        }
-                    }
-                    if ( ! get_user_meta( $user->ID, 'zume_location_grid_from_ip', true ) ) {
-                        $value = get_user_meta( $owner_id, 'zume_location_grid_from_ip', true );
-                        if ( ! $value ) {
-                            dt_write_log( $email .  ' : zume_location_grid_from_ip' );
-                            update_user_meta( $user->ID, 'zume_location_grid_from_ip', $value );
-                        }
-                    }
-                    if ( ! get_user_meta( $user->ID, 'zume_recent_ip', true ) ) {
-                        $value = get_user_meta( $owner_id, 'zume_recent_ip', true );
-                        if ( ! $value ) {
-                            dt_write_log( $email .  ' : zume_recent_ip' );
-                            update_user_meta( $user->ID, 'zume_recent_ip', $value );
-                        }
-                    }
-                    if ( ! get_user_meta( $user->ID, 'zume_raw_location_from_ip', true ) ) {
-                        $value = get_user_meta( $owner_id, 'zume_raw_location_from_ip', true );
-                        if ( ! $value ) {
-                            dt_write_log( $email .  ' : zume_raw_location_from_ip' );
-                            update_user_meta( $user->ID, 'zume_raw_location_from_ip', $value );
-                        }
-                    }
+                $geocoder = new Location_Grid_Geocoder();
+                $grid = $geocoder->get_grid_id_by_lnglat( $lng, $lat );
 
+                $level = $grid['level_name'];
+                $label = $geocoder->_format_full_name( $grid );
+                $grid_id = $grid['grid_id'];
 
-                }
+                $location_grid_meta = [
+                    'lng' => $lng,
+                    'lat' => $lat,
+                    'level' => $level,
+                    'label' => $label,
+                    'grid_id' => $grid_id,
+                ];
+
+                update_user_meta( $owner_id, 'zume_location_grid_meta_from_ip', $location_grid_meta );
+                update_user_meta( $owner_id, 'zume_location_grid_from_ip', $grid_id );
+                update_user_meta( $owner_id, 'zume_address_from_ip', $array['address'] );
+
 
             }
+
         }
 
     }
