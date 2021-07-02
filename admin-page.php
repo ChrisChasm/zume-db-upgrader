@@ -154,7 +154,7 @@ class Zume_DB_Upgrade {
 
             $this->run_task( $result );
 
-            if ( $processed_count > 100 ) {
+            if ( $processed_count > 10000 ) {
                 break;
             }
         }
@@ -180,10 +180,49 @@ class Zume_DB_Upgrade {
 
     public function run_task( $result ) {
 
-        $array = maybe_unserialize($result['meta_value'] );
+        $array = maybe_unserialize( $result['meta_value'] );
+//        dt_write_log($result['meta_key']);
 
-        
+        if ( $array['session_9'] ) {
+            if ( ! empty( $array['coleaders'] ) ) {
+                foreach( $array['coleaders'] as $email ) {
+                    $user = get_user_by('email', $email );
 
+                    if ( ! $user ) {
+                        continue;
+                    }
+
+                    if ( ! get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
+                        update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
+                    }
+
+                    if ( ! get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
+                        update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
+                    }
+
+
+                }
+
+            }
+        }
+        if (  $array['session_10'] ) {
+            if ( ! empty( $array['coleaders'] ) ) {
+                foreach( $array['coleaders'] as $email ) {
+                    $user = get_user_by('email', $email );
+
+                    if ( ! $user ) {
+                        continue;
+                    }
+
+                    if ( get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
+                        continue;
+                    }
+                    update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
+
+                }
+
+            }
+        }
 
     }
 
