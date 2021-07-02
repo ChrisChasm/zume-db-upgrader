@@ -183,7 +183,9 @@ class Zume_DB_Upgrade {
         $array = maybe_unserialize( $result['meta_value'] );
 //        dt_write_log($result['meta_key']);
 
-        if ( $array['session_9'] ) {
+        $owner_id = $result['user_id'];
+
+        if ( $array['session_9'] || $array['session_10'] ) {
             if ( ! empty( $array['coleaders'] ) ) {
                 foreach( $array['coleaders'] as $email ) {
                     $user = get_user_by('email', $email );
@@ -192,32 +194,50 @@ class Zume_DB_Upgrade {
                         continue;
                     }
 
+                    dt_write_log( $email );
+
                     if ( ! get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
+                        dt_write_log( 'zume_training_complete' );
                         update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
                     }
 
-                    if ( ! get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
-                        update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
+                    if ( ! get_user_meta( $user->ID, 'zume_address_from_ip', true ) ) {
+                        $value = get_user_meta( $owner_id, 'zume_address_from_ip', true );
+                        if ( ! $value ) {
+                            dt_write_log($email .  ' : zume_address_from_ip' );
+                            update_user_meta( $user->ID, 'zume_address_from_ip', $value );
+                        }
                     }
 
-
-                }
-
-            }
-        }
-        if (  $array['session_10'] ) {
-            if ( ! empty( $array['coleaders'] ) ) {
-                foreach( $array['coleaders'] as $email ) {
-                    $user = get_user_by('email', $email );
-
-                    if ( ! $user ) {
-                        continue;
+                    if ( ! get_user_meta( $user->ID, 'zume_location_grid_meta_from_ip', true ) ) {
+                        $value = get_user_meta( $owner_id, 'zume_location_grid_meta_from_ip', true );
+                        if ( ! $value ) {
+                            dt_write_log( $email .  ' : zume_location_grid_meta_from_ip' );
+                            update_user_meta( $user->ID, 'zume_location_grid_meta_from_ip', $value );
+                        }
+                    }
+                    if ( ! get_user_meta( $user->ID, 'zume_location_grid_from_ip', true ) ) {
+                        $value = get_user_meta( $owner_id, 'zume_location_grid_from_ip', true );
+                        if ( ! $value ) {
+                            dt_write_log( $email .  ' : zume_location_grid_from_ip' );
+                            update_user_meta( $user->ID, 'zume_location_grid_from_ip', $value );
+                        }
+                    }
+                    if ( ! get_user_meta( $user->ID, 'zume_recent_ip', true ) ) {
+                        $value = get_user_meta( $owner_id, 'zume_recent_ip', true );
+                        if ( ! $value ) {
+                            dt_write_log( $email .  ' : zume_recent_ip' );
+                            update_user_meta( $user->ID, 'zume_recent_ip', $value );
+                        }
+                    }
+                    if ( ! get_user_meta( $user->ID, 'zume_raw_location_from_ip', true ) ) {
+                        $value = get_user_meta( $owner_id, 'zume_raw_location_from_ip', true );
+                        if ( ! $value ) {
+                            dt_write_log( $email .  ' : zume_raw_location_from_ip' );
+                            update_user_meta( $user->ID, 'zume_raw_location_from_ip', $value );
+                        }
                     }
 
-                    if ( get_user_meta( $user->ID, 'zume_training_complete', true ) ) {
-                        continue;
-                    }
-                    update_user_meta( $user->ID, 'zume_training_complete', $result['meta_key'] );
 
                 }
 
