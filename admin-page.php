@@ -133,9 +133,9 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
+        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'", ARRAY_A ); // @todo replace
 
         $loop_count = 0;
         $processed_count = 0;
@@ -180,7 +180,9 @@ class Zume_DB_Upgrade {
 
     public function run_task( $result ) {
 
-        /* @todo insert upgrade task */
+        $array = maybe_unserialize($result['meta_value'] );
+
+        
 
 
     }
