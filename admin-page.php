@@ -176,34 +176,60 @@ class Zume_DB_Upgrade {
             return;
         }
 
-        $ip_result = unserialize( $result['meta_value'] );
+        $ip_results = unserialize( $result['meta_value'] );
         $user_id = $result['user_id'];
 
-        $country = DT_Ipstack_API::parse_raw_result( $ip_result, 'country_name' );
-        $region = DT_Ipstack_API::parse_raw_result( $ip_result, 'region_name' );
-        $city = DT_Ipstack_API::parse_raw_result( $ip_result, 'city' );
-        if ( empty( $city ) ) {
-            dt_write_log('Geocode required ' . $user_id );
-            $ip_address = get_user_meta( $user_id, 'zume_recent_ip', true );
-            $ip_result = DT_Ipstack_API::geocode_ip_address( $ip_address );
+        if ( isset( $ip_results['ip'] ) &&  ! empty( $ip_results['ip'] ) && isset( $ip_results['country_name'] ) &&  ! empty( $ip_results['v'] )  ) {
+            $country = DT_Ipstack_API::parse_raw_result( $ip_results, 'country_name' );
+            $region = DT_Ipstack_API::parse_raw_result( $ip_results, 'region_name' );
+            $city = DT_Ipstack_API::parse_raw_result( $ip_results, 'city' );
 
-            $country = DT_Ipstack_API::parse_raw_result( $ip_result, 'country_name' );
-            $region = DT_Ipstack_API::parse_raw_result( $ip_result, 'region_name' );
-            $city = DT_Ipstack_API::parse_raw_result( $ip_result, 'city' );
-
-            if ( empty( $city ) ) {
-                dt_write_log('Could not geocode ' . $user_id );
-                return;
+            $address = '';
+            if( ! empty($country) ) {
+                $address = $country;
             }
-            update_user_meta( $user_id, 'zume_raw_location_from_ip', $ip_result );
+            if( ! empty($region) ) {
+                $address = $region . ', ' . $address;
+            }
+            if( ! empty($city) ) {
+                $address = $city . ', ' . $address;
+            }
+
+            update_user_meta( $user_id, 'zume_address_from_ip', $address ); // location grid id only
+
+            $location_grid_meta = DT_Ipstack_API::convert_ip_result_to_location_grid_meta( $ip_results );
+            update_user_meta( $user_id, 'zume_location_grid_meta_from_ip', $location_grid_meta ); // location grid meta array
+            update_user_meta( $user_id, 'zume_location_grid_from_ip', $location_grid_meta['grid_id'] ); // location grid id only
         }
-        $address = $city . ', ' . $region . ', ' . $country;
-        update_user_meta( $user_id, 'zume_address_from_ip', $address ); // location grid id only
+        else {
+            $ip_address = get_user_meta( $user_id, 'zume_recent_ip', true );
+            $ip_results = DT_Ipstack_API::geocode_ip_address( $ip_address );
+            update_user_meta( $user_id, 'zume_raw_location_from_ip', $ip_results );
 
+            if ( class_exists( 'DT_Ipstack_API' ) ) {
+                $country = DT_Ipstack_API::parse_raw_result( $ip_results, 'country_name' );
+                $region = DT_Ipstack_API::parse_raw_result( $ip_results, 'region_name' );
+                $city = DT_Ipstack_API::parse_raw_result( $ip_results, 'city' );
 
-        $location_grid_meta = DT_Ipstack_API::convert_ip_result_to_location_grid_meta( $ip_result );
-        update_user_meta( $user_id, 'zume_location_grid_meta_from_ip', $location_grid_meta ); // location grid meta array
-        update_user_meta( $user_id, 'zume_location_grid_from_ip', $location_grid_meta['grid_id'] ); // location grid id only
+                $address = '';
+                if( ! empty($country) ) {
+                    $address = $country;
+                }
+                if( ! empty($region) ) {
+                    $address = $region . ', ' . $address;
+                }
+                if( ! empty($city) ) {
+                    $address = $city . ', ' . $address;
+                }
+
+                update_user_meta( $user_id, 'zume_address_from_ip', $address ); // location grid id only
+
+                $location_grid_meta = DT_Ipstack_API::convert_ip_result_to_location_grid_meta( $ip_results );
+                update_user_meta( $user_id, 'zume_location_grid_meta_from_ip', $location_grid_meta ); // location grid meta array
+                update_user_meta( $user_id, 'zume_location_grid_from_ip', $location_grid_meta['grid_id'] ); // location grid id only
+
+            }
+        }
 
     }
 
