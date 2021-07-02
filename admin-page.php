@@ -179,7 +179,7 @@ class Zume_DB_Upgrade {
         $ip_results = unserialize( $result['meta_value'] );
         $user_id = $result['user_id'];
 
-        if ( isset( $ip_results['ip'] ) &&  ! empty( $ip_results['ip'] ) && isset( $ip_results['country_name'] ) &&  ! empty( $ip_results['v'] )  ) {
+        if ( isset( $ip_results['ip'] ) &&  ! empty( $ip_results['ip'] ) && isset( $ip_results['country_name'] ) &&  ! empty( $ip_results['country_name'] )  ) {
             $country = DT_Ipstack_API::parse_raw_result( $ip_results, 'country_name' );
             $region = DT_Ipstack_API::parse_raw_result( $ip_results, 'region_name' );
             $city = DT_Ipstack_API::parse_raw_result( $ip_results, 'city' );
