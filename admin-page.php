@@ -148,9 +148,9 @@ class Zume_DB_Upgrade {
             $processed_count++;
 
             // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
-                continue;
-            }
+//            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
+//                continue;
+//            }
 
             $this->run_task( $result );
 
