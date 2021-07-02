@@ -133,57 +133,28 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
-
-        $loop_count = 0;
-        $processed_count = 0;
+        $results = $wpdb->get_results( $wpdb->prepare( "SELECT user_id, meta_key
+                    FROM wp_usermeta
+                    WHERE meta_key LIKE 'zume_group%' AND  meta_value LIKE %s
+                    ;", '%' . $wpdb->esc_like('s:9:"session_9";b:1') . '%'), ARRAY_A );
         foreach( $results as $index => $result ) {
-            $loop_count++;
-            if ( $loop_count < $step ) {
-                continue;
-            }
+            update_user_meta( $result['user_id'], 'zume_training_complete', $result['meta_key'] );
 
-            $processed_count++;
-
-            // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ false ){
-                continue;
-            }
-
-            $this->run_task( $result );
-
-            if ( $processed_count > 100 ) {
-                break;
-            }
         }
 
-        if ( $loop_count >= $total_count  ) {
-            return;
+        $results = $wpdb->get_results( $wpdb->prepare( "SELECT user_id, meta_key
+                    FROM wp_usermeta
+                    WHERE meta_key LIKE 'zume_group%' AND meta_value LIKE %s 
+                   ;", '%' . $wpdb->esc_like('s:10:"session_10";b:1') . '%'), ARRAY_A );
+        foreach( $results as $index => $result ) {
+            update_user_meta( $result['user_id'], 'zume_training_complete', $result['meta_key'] );
+
         }
-
-        ?>
-        <tr>
-            <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
-        </tr>
-        <script type="text/javascript">
-            <!--
-            function nextpage() {
-                location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=<?php echo esc_attr( $loop_count ) ?>&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
-            }
-            setTimeout( "nextpage()", 1500 );
-            //-->
-        </script>
-        <?php
-    }
-
-    public function run_task( $result ) {
-
-        /* @todo insert upgrade task */
 
 
     }
+
 
     /**
      * Magic method to output a string if trying to use the object as a string.
