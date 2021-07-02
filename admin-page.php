@@ -20,6 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly
 
 if ( ! function_exists( 'zume_db_upgrade' ) ) {
     function zume_db_upgrade() {
+        $wp_theme = wp_get_theme();
+        $is_theme_dt = strpos( $wp_theme->get_template(), "disciple-tools-theme" ) !== false || $wp_theme->name === "Disciple Tools";
+        if ( !$is_theme_dt ){
+            return false;
+        }
         return Zume_DB_Upgrade::instance();
     }
 }
@@ -35,6 +40,7 @@ class Zume_DB_Upgrade {
     public $title = 'Zume DB Upgrade';
     public $permissions = 'manage_options';
     public $limit = 50;
+    public $working_languages = [];
 
     /**  Singleton */
     private static $_instance = null;
@@ -52,6 +58,7 @@ class Zume_DB_Upgrade {
     public function __construct() {
         if ( is_admin() ) {
             add_action( "admin_menu", array( $this, "register_menu" ) );
+            $this->working_languages = get_option('dt_working_languages');
         }
     } // End __construct()
 
@@ -187,12 +194,8 @@ return;
             return;
         }
 
-
-
         $created_date = $result['created_date'];
         $user_id = $result['user_id'];
-
-
 
         // get user location information
         $location_grid_meta = get_user_meta( $user_id, 'zume_location_grid_meta_from_ip', true );
@@ -202,6 +205,8 @@ return;
             $level = $location_grid_meta['level'];
             $label = $location_grid_meta['label'];
             $grid_id = $location_grid_meta['grid_id'];
+
+
         } else {
             $lng = 0;
             $lat = 0;
@@ -210,15 +215,26 @@ return;
             $grid_id = '';
         }
 
+        if ( $grid_id ) {
+            $country_name = $wpdb->get_var("
+            SELECT lgc.name 
+            FROM $wpdb->dt_location_grid lg
+            LEFT JOIN $wpdb->dt_location_grid lgc ON lg.admin0_grid_id=lgc.grid_id
+            WHERE lg.grid_id = {$grid_id}
+        ");
+        } else {
+            $country_name = '';
+        }
+
+
+
         $group_id = $result['group_id'];
         $page = $result['page'];
-        $action = $result['action'];
-        $meta = $result['meta'];
 
-
-        if( empty( $result['language'] ) ) {
-            $language = 'en';
-            $language_name = 'English';
+        $lang_code = get_user_meta( $user_id, 'zume_language', true );
+        if( isset( $this->working_languages[$lang_code] ) ) {
+            $language = $lang_code;
+            $language_name = $this->working_languages[$lang_code]['label'];
         } else {
             $language =  $result['language'];
             $language_name = strtoupper( $result['language'] );
@@ -227,14 +243,28 @@ return;
         $action = '';
         $session = '';
         $category = '';
+        $group_size = '';
         if ( $this->startsWith( $result['action'], 'registered'  ) ) {
             $action = 'zume_training';
             $session = '';
             $category = 'joining';
         }
-        else if ( $this->startsWith( $result['action'], 'leading'  ) ) {
-            $action = $result['action'];
+        else if ( $this->startsWith( $result['action'], 'session'  ) && 'course' === $page && $this->startsWith( $result['meta'], 'group'  )) {
             $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $action = 'leading_' . $session;
+            $group_size = str_replace('_', '', substr( $result['meta'], -2, 2 ) );
+            $category = 'leading';
+        }
+        else if ( $this->startsWith( $result['action'], 'session'  ) && 'course' === $page && $this->startsWith( $result['meta'], 'member'  )) {
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $action = 'leading_' . $session;
+            $group_size = str_replace('_', '', substr( $result['meta'], -2, 2 ) );
+            $category = 'leading';
+        }
+        else if ( $this->startsWith( $result['action'], 'update_three_month_plan'  ) ) {
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $action = 'leading_' . $session;
+            $group_size = str_replace('_', '', substr( $result['meta'], -2, 2 ) );
             $category = 'leading';
         }
         else {
@@ -243,14 +273,16 @@ return;
         }
 
 
+
+
         $payload = maybe_serialize( [
             'language_code' => $language,
             'language_name' => $language_name,
             'session' => $session,
-            'group_size' => '',
+            'group_size' => $group_size,
             'note' => '',
             'location_type' => 'ip',
-            'country' => '',
+            'country' => $country_name,
             'unique_id' => dt_create_unique_key(),
         ] );
 
@@ -297,6 +329,12 @@ return;
 
 
     }
+    public function startsWith ($string, $startString)
+    {
+        $len = strlen($startString);
+        return (substr($string, 0, $len) === $startString);
+    }
+
 
     /**
      * Magic method to output a string if trying to use the object as a string.
