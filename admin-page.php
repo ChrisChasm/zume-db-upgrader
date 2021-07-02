@@ -169,7 +169,7 @@ class Zume_DB_Upgrade {
         if ( $loop_count >= $total_count  ) {
             return;
         }
-return;
+
         ?>
         <tr>
             <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
