@@ -179,6 +179,15 @@ return;
     }
 
     public function run_task( $result ) {
+        global $wpdb;
+        $skip = [
+            'logged_out', 'logged_in', 'update_profile', 'added_affiliate_key', 'activate_group', 'coleader_invitation_response', 'delete_group', 'deleted'
+        ];
+        if ( in_array( $result['action'], $skip ) ) {
+            return;
+        }
+
+
 
         $created_date = $result['created_date'];
         $user_id = $result['user_id'];
@@ -187,7 +196,125 @@ return;
         $action = $result['action'];
         $meta = $result['meta'];
 
+
+        // get user location information
         
+        $lng = $result['lng'];
+        $lat = $result['lat'];
+        $level = $result['level'];
+        $label = $result['label'];
+        $grid_id = $result['grid_id'];
+
+
+
+
+
+
+
+        if( empty( $result['language'] ) ) {
+            $language = 'en';
+            $language_name = 'English';
+        } else {
+            $language =  $result['language'];
+            $language_name = strtoupper( $result['language'] );
+        }
+
+        $action = '';
+        $session = '';
+        $category = '';
+        if ( $this->startsWith( $result['action'], 'leading'  ) ) {
+            $action = $result['action'];
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $category = 'leading';
+        }
+        else if ( $this->startsWith( $result['action'], 'studied'  ) ) {
+            $action = $result['action'];
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
+            $category = 'studying';
+        }
+        else if ( $this->startsWith( $result['action'], 'joined_community'  ) ) {
+            $action = 'zume_vision';
+            $session = '';
+            $category = 'joining';
+        }
+        else if ( $this->startsWith( $result['action'], 'registered'  ) ) {
+            $action = 'zume_training';
+            $session = '';
+            $category = 'joining';
+        }
+        else if ( $this->startsWith( $result['action'], 'requested_coach'  ) ) {
+            $action = 'coaching';
+            $session = '';
+            $category = 'joining';
+        }
+        else if ( $this->startsWith( $result['action'], 'updated_3_month'  ) ) {
+            $action = 'updated_3_month';
+            $session = '';
+            $category = 'committing';
+        }
+        else if ( $this->startsWith( $result['action'], 'started_group'  ) ) {
+            $action = 'starting_group';
+            $session = '';
+            $category = 'leading';
+        }
+        else {
+            dt_write_log('DID NOT FIND ACTION');
+            dt_write_log($result['id']);
+        }
+
+
+        $payload = maybe_serialize( [
+            'language_code' => $language,
+            'language_name' => $language_name,
+            'session' => $session,
+            'group_size' => $result['group_size'],
+            'note' => $result['note'],
+            'location_type' => 'ip',
+            'country' => $result['country'],
+            'unique_id' => $result['hash'],
+        ] );
+        $site_id = get_option('dt_site_id');
+
+        $timestamp = $result['timestamp'];
+        $hash = $result['hash'];
+
+
+//        $wpdb->query("
+//        INSERT INTO wp_3_dt_movement_log
+//        (
+//         site_id,
+//         site_record_id,
+//         site_object_id,
+//         action,
+//         category,
+//         lng,
+//         lat,
+//         level,
+//         label,
+//         grid_id,
+//         payload,
+//         timestamp,
+//         hash
+//        )
+//        VALUES
+//        (
+//         '$site_id',
+//         NULL,
+//         NULL,
+//         '$action',
+//         '$category',
+//         '$lng',
+//         '$lat',
+//         '$level',
+//         '$label',
+//         '$grid_id',
+//         '$payload',
+//         '$timestamp',
+//         '$hash'
+//        )
+//        ");
+
+//        dt_write_log($result['id'] . ' - ' . $wpdb->rows_affected);
 
 
     }
