@@ -191,24 +191,29 @@ return;
 
         $created_date = $result['created_date'];
         $user_id = $result['user_id'];
+
+
+
+        // get user location information
+        $location_grid_meta = get_user_meta( $user_id, 'zume_location_grid_meta_from_ip', true );
+        if ( $location_grid_meta ) {
+            $lng = $location_grid_meta['lng'];
+            $lat = $location_grid_meta['lat'];
+            $level = $location_grid_meta['level'];
+            $label = $location_grid_meta['label'];
+            $grid_id = $location_grid_meta['grid_id'];
+        } else {
+            $lng = 0;
+            $lat = 0;
+            $level = '';
+            $label = '';
+            $grid_id = '';
+        }
+
         $group_id = $result['group_id'];
         $page = $result['page'];
         $action = $result['action'];
         $meta = $result['meta'];
-
-
-        // get user location information
-        
-        $lng = $result['lng'];
-        $lat = $result['lat'];
-        $level = $result['level'];
-        $label = $result['label'];
-        $grid_id = $result['grid_id'];
-
-
-
-
-
 
 
         if( empty( $result['language'] ) ) {
@@ -222,39 +227,14 @@ return;
         $action = '';
         $session = '';
         $category = '';
-        if ( $this->startsWith( $result['action'], 'leading'  ) ) {
-            $action = $result['action'];
-            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
-            $category = 'leading';
-        }
-        else if ( $this->startsWith( $result['action'], 'studied'  ) ) {
-            $action = $result['action'];
-            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
-            $category = 'studying';
-        }
-        else if ( $this->startsWith( $result['action'], 'joined_community'  ) ) {
-            $action = 'zume_vision';
-            $session = '';
-            $category = 'joining';
-        }
-        else if ( $this->startsWith( $result['action'], 'registered'  ) ) {
+        if ( $this->startsWith( $result['action'], 'registered'  ) ) {
             $action = 'zume_training';
             $session = '';
             $category = 'joining';
         }
-        else if ( $this->startsWith( $result['action'], 'requested_coach'  ) ) {
-            $action = 'coaching';
-            $session = '';
-            $category = 'joining';
-        }
-        else if ( $this->startsWith( $result['action'], 'updated_3_month'  ) ) {
-            $action = 'updated_3_month';
-            $session = '';
-            $category = 'committing';
-        }
-        else if ( $this->startsWith( $result['action'], 'started_group'  ) ) {
-            $action = 'starting_group';
-            $session = '';
+        else if ( $this->startsWith( $result['action'], 'leading'  ) ) {
+            $action = $result['action'];
+            $session = str_replace('_', '', substr( $result['action'], -2, 2 ) );
             $category = 'leading';
         }
         else {
@@ -267,52 +247,51 @@ return;
             'language_code' => $language,
             'language_name' => $language_name,
             'session' => $session,
-            'group_size' => $result['group_size'],
-            'note' => $result['note'],
+            'group_size' => '',
+            'note' => '',
             'location_type' => 'ip',
-            'country' => $result['country'],
-            'unique_id' => $result['hash'],
+            'country' => '',
+            'unique_id' => dt_create_unique_key(),
         ] );
+
         $site_id = get_option('dt_site_id');
+        $timestamp = strtotime( $created_date );
+        $hash = dt_create_unique_key();
 
-        $timestamp = $result['timestamp'];
-        $hash = $result['hash'];
-
-
-//        $wpdb->query("
-//        INSERT INTO wp_3_dt_movement_log
-//        (
-//         site_id,
-//         site_record_id,
-//         site_object_id,
-//         action,
-//         category,
-//         lng,
-//         lat,
-//         level,
-//         label,
-//         grid_id,
-//         payload,
-//         timestamp,
-//         hash
-//        )
-//        VALUES
-//        (
-//         '$site_id',
-//         NULL,
-//         NULL,
-//         '$action',
-//         '$category',
-//         '$lng',
-//         '$lat',
-//         '$level',
-//         '$label',
-//         '$grid_id',
-//         '$payload',
-//         '$timestamp',
-//         '$hash'
-//        )
-//        ");
+        $wpdb->query("
+        INSERT INTO wp_3_dt_movement_log
+        (
+         site_id,
+         site_record_id,
+         site_object_id,
+         action,
+         category,
+         lng,
+         lat,
+         level,
+         label,
+         grid_id,
+         payload,
+         timestamp,
+         hash
+        )
+        VALUES
+        (
+         '$site_id',
+         NULL,
+         NULL,
+         '$action',
+         '$category',
+         '$lng',
+         '$lat',
+         '$level',
+         '$label',
+         '$grid_id',
+         '$payload',
+         '$timestamp',
+         '$hash'
+        )
+        ");
 
 //        dt_write_log($result['id'] . ' - ' . $wpdb->rows_affected);
 
