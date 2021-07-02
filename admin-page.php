@@ -80,7 +80,7 @@ class Zume_DB_Upgrade {
             <thead>
             <tr>
                 <th><p style="max-width:450px"></p>
-                    <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade Ip Address Info</a></p>
+                    <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
                 </th>
             </tr>
             </thead>
@@ -133,9 +133,9 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
+        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM wp_zume_logging" );
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results( "SELECT * FROM wp_zume_logging", ARRAY_A );
 
         $loop_count = 0;
         $processed_count = 0;
@@ -148,9 +148,9 @@ class Zume_DB_Upgrade {
             $processed_count++;
 
             // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
-                continue;
-            }
+//            if ( /* @todo insert marker test here*/ get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){
+//                continue;
+//            }
 
             $this->run_task( $result );
 
@@ -162,7 +162,7 @@ class Zume_DB_Upgrade {
         if ( $loop_count >= $total_count  ) {
             return;
         }
-
+return;
         ?>
         <tr>
             <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
@@ -180,7 +180,14 @@ class Zume_DB_Upgrade {
 
     public function run_task( $result ) {
 
-        /* @todo insert upgrade task */
+        $created_date = $result['created_date'];
+        $user_id = $result['user_id'];
+        $group_id = $result['group_id'];
+        $page = $result['page'];
+        $action = $result['action'];
+        $meta = $result['meta'];
+
+        
 
 
     }
