@@ -135,30 +135,33 @@ class Zume_DB_Upgrade {
         // Get total count of records to process
         $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results( "SELECT um.user_id as new, zg.user_id as old
+fROM wp_usermeta um
+ LEFT JOIN wp_usermeta zg ON um.meta_value = zg.meta_key
+LEFT JOIN wp_usermeta ip ON um.user_id = ip.user_id AND ip.meta_key = 'zume_location_grid_from_ip'
+WHERE um.meta_key = 'zume_training_complete'
+AND ip.meta_value IS NULL", ARRAY_A ); // @todo replace
+
+
+
 
         $loop_count = 0;
         $processed_count = 0;
         foreach( $results as $index => $result ) {
-            $loop_count++;
-            if ( $loop_count < $step ) {
-                continue;
+            $lgm = get_user_meta( $result['old'], 'zume_location_grid_meta_from_ip',true );
+            if ( $lgm ) {
+                update_user_meta( $result['new'], 'zume_location_grid_meta_from_ip',  $lgm ); // location grid meta array
+                update_user_meta( $result['new'], 'zume_location_grid_from_ip',  $lgm['grid_id'] ); // location grid meta array
             }
 
-            $processed_count++;
 
-            // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ false ){
-                continue;
+            $rip = get_user_meta( $result['old'], 'zume_recent_ip',true );
+            if ( $rip ) {
+                update_user_meta( $result['new'], 'zume_recent_ip',  $rip ); // location grid meta array
             }
 
-            $this->run_task( $result );
-
-            if ( $processed_count > 10000 ) {
-                break;
-            }
         }
-
+return;
         if ( $loop_count >= $total_count  ) {
             return;
         }
