@@ -154,7 +154,7 @@ class Zume_DB_Upgrade {
 
             $this->run_task( $result );
 
-            if ( $processed_count > 100 ) {
+            if ( $processed_count > 10000 ) {
                 break;
             }
         }
