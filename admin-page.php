@@ -133,8 +133,7 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-       $wpdb->query( "DELETE FROM wp_usermeta WHERE meta_key = 'zume_location_grid_from_ip' AND meta_value = '';" );
-        $wpdb->query( "DELETE FROM wp_usermeta WHERE meta_key = 'zume_location_grid_from_ip' AND meta_value IS NULL;" );
+
         $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
         // Get all records to process
         $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'", ARRAY_A ); // @todo replace
