@@ -133,14 +133,14 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
+//        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
         // Get all records to process
         $results = $wpdb->get_results( "SELECT um.user_id as new, zg.user_id as old
-fROM wp_usermeta um
- LEFT JOIN wp_usermeta zg ON um.meta_value = zg.meta_key
-LEFT JOIN wp_usermeta ip ON um.user_id = ip.user_id AND ip.meta_key = 'zume_location_grid_from_ip'
-WHERE um.meta_key = 'zume_training_complete'
-AND ip.meta_value IS NULL", ARRAY_A ); // @todo replace
+            fROM wp_usermeta um
+             LEFT JOIN wp_usermeta zg ON um.meta_value = zg.meta_key
+            LEFT JOIN wp_usermeta ip ON um.user_id = ip.user_id AND ip.meta_key = 'zume_location_grid_from_ip'
+            WHERE um.meta_key = 'zume_training_complete'
+            AND ip.meta_value IS NULL", ARRAY_A );
 
 
 
@@ -161,77 +161,11 @@ AND ip.meta_value IS NULL", ARRAY_A ); // @todo replace
             }
 
         }
-return;
-        if ( $loop_count >= $total_count  ) {
-            return;
-        }
 
-        ?>
-        <tr>
-            <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
-        </tr>
-        <script type="text/javascript">
-            <!--
-            function nextpage() {
-                location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=<?php echo esc_attr( $loop_count ) ?>&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
-            }
-            setTimeout( "nextpage()", 1500 );
-            //-->
-        </script>
-        <?php
     }
 
     public function run_task( $result ) {
 
-        $array = maybe_unserialize( $result['meta_value'] );
-//        dt_write_log($result['meta_key']);
-
-        $owner_id = $result['user_id'];
-
-        if ( ! get_user_meta( $owner_id, 'zume_recent_ip', true ) ) {
-            if ( '204 E Chestnut St, Independence, Kansas 67301, United States' === $array['address']) {
-
-                $location_grid_meta = [
-                    'lng' => -98.5556,
-                    'lat' => 39.8097,
-                    'level' => 'admin0',
-                    'label' => 'United States',
-                    'grid_id' => 100364199,
-                ];
-
-                update_user_meta( $owner_id, 'zume_location_grid_meta_from_ip', $location_grid_meta );
-                update_user_meta( $owner_id, 'zume_location_grid_from_ip', 100364199 );
-                update_user_meta( $owner_id, 'zume_address_from_ip', 'United States' );
-
-            } else {
-                $mbresult = DT_Mapbox_API::forward_lookup( $array['address'] );
-
-                $lng = DT_Mapbox_API::parse_raw_result($mbresult, 'lng');
-                $lat = DT_Mapbox_API::parse_raw_result($mbresult, 'lat');
-
-                $geocoder = new Location_Grid_Geocoder();
-                $grid = $geocoder->get_grid_id_by_lnglat( $lng, $lat );
-
-                $level = $grid['level_name'];
-                $label = $geocoder->_format_full_name( $grid );
-                $grid_id = $grid['grid_id'];
-
-                $location_grid_meta = [
-                    'lng' => $lng,
-                    'lat' => $lat,
-                    'level' => $level,
-                    'label' => $label,
-                    'grid_id' => $grid_id,
-                ];
-
-                update_user_meta( $owner_id, 'zume_location_grid_meta_from_ip', $location_grid_meta );
-                update_user_meta( $owner_id, 'zume_location_grid_from_ip', $grid_id );
-                update_user_meta( $owner_id, 'zume_address_from_ip', $array['address'] );
-
-
-            }
-
-        }
 
     }
 
