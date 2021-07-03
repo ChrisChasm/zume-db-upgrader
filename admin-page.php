@@ -133,6 +133,8 @@ class Zume_DB_Upgrade {
          */
         global $wpdb;
         // Get total count of records to process
+       $wpdb->query( "DELETE FROM wp_usermeta WHERE meta_key = 'zume_location_grid_from_ip' AND meta_value = '';" );
+        $wpdb->query( "DELETE FROM wp_usermeta WHERE meta_key = 'zume_location_grid_from_ip' AND meta_value IS NULL;" );
         $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'" ); // @todo replace
         // Get all records to process
         $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%'", ARRAY_A ); // @todo replace
@@ -148,13 +150,13 @@ class Zume_DB_Upgrade {
             $processed_count++;
 
             // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ false ){
+            if ( get_user_meta( $result['user_id'], 'zume_recent_ip', true ) ) {
                 continue;
             }
 
             $this->run_task( $result );
 
-            if ( $processed_count > 10000 ) {
+            if ( $processed_count > 300 ) {
                 break;
             }
         }
@@ -186,8 +188,9 @@ class Zume_DB_Upgrade {
         $owner_id = $result['user_id'];
 
         if ( ! get_user_meta( $owner_id, 'zume_recent_ip', true ) ) {
+            dt_write_log($owner_id);
             if ( '204 E Chestnut St, Independence, Kansas 67301, United States' === $array['address']) {
-
+                dt_write_log( 'Independence');
                 $location_grid_meta = [
                     'lng' => -98.5556,
                     'lat' => 39.8097,
@@ -200,7 +203,8 @@ class Zume_DB_Upgrade {
                 update_user_meta( $owner_id, 'zume_location_grid_from_ip', 100364199 );
                 update_user_meta( $owner_id, 'zume_address_from_ip', 'United States' );
 
-            } else {
+            } else if ( ! empty( $array['address'] ) ) {
+                dt_write_log( 'Loookup');
                 $mbresult = DT_Mapbox_API::forward_lookup( $array['address'] );
 
                 $lng = DT_Mapbox_API::parse_raw_result($mbresult, 'lng');
