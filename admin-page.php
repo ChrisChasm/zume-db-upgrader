@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zume DB Upgrader
  * Plugin URI: https://github.com/ChrisChasm/zume-db-upgrader
- * Description: Reusable upgrader for Zume maintenance
+ * Description: Reusable upgrader for Zúme maintenance
  * Version:  0.1.0
  * Author URI: https://github.com/DiscipleTools
  * GitHub Plugin URI: https://github.com/ChrisChasm/zume-db-upgrader
@@ -32,7 +32,9 @@ add_action( 'after_setup_theme', 'zume_db_upgrade' );
 class Zume_DB_Upgrade {
 
     public $token = 'zume_db_upgrade';
-    public $title = 'Zume DB Upgrade';
+    public $title = 'Zúme Upgrader';
+    public $page_title = 'User Upgrade';
+    public $page_version = 'v1';
     public $permissions = 'manage_options';
     public $limit = 50;
 
@@ -61,7 +63,7 @@ class Zume_DB_Upgrade {
      * @since 0.1
      */
     public function register_menu() {
-        add_menu_page( 'Zume DB Upgrade', 'Zume DB Upgrade', $this->permissions, $this->token, [ $this, 'content' ], 'dashicons-admin-generic', 59 );
+        add_menu_page( $this->page_title . ' ' . $this->page_version, $this->title,  $this->permissions, $this->token, [ $this, 'content' ], 'dashicons-admin-generic', 59 );
     }
 
     /**
@@ -79,7 +81,10 @@ class Zume_DB_Upgrade {
         <table class="widefat striped">
             <thead>
             <tr>
-                <th><p style="max-width:450px"></p>
+                <th><h2><?php echo $this->page_title . ' ' . $this->page_version ?></h2></th>
+            </tr>
+            <tr>
+                <th>
                     <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
                 </th>
             </tr>
@@ -104,7 +109,7 @@ class Zume_DB_Upgrade {
                     <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
                 </tr>
                 <script type="text/javascript">
-                    <!--
+                    //<!--
                     function nextpage() {
                         location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=0&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
                     }
@@ -132,11 +137,13 @@ class Zume_DB_Upgrade {
          * it will start a new loop sending the new start number.
          */
         global $wpdb;
-        // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key LIKE 'zume_group%' LIMIT 10", ARRAY_A );
+        if ( empty( $results ) ) {
+            return;
+        }
 
+        $total_count = count( $results );
         $loop_count = 0;
         $processed_count = 0;
         foreach( $results as $index => $result ) {
@@ -168,12 +175,10 @@ class Zume_DB_Upgrade {
             <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
         </tr>
         <script type="text/javascript">
-            <!--
             function nextpage() {
                 location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=<?php echo esc_attr( $loop_count ) ?>&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
             }
             setTimeout( "nextpage()", 1500 );
-            //-->
         </script>
         <?php
     }
@@ -181,6 +186,7 @@ class Zume_DB_Upgrade {
     public function run_task( $result ) {
 
         /* @todo insert upgrade task */
+        dt_write_log( $result['user_id']);
 
 
     }
