@@ -34,7 +34,7 @@ class Zume_DB_Upgrade {
     public $token = 'zume_db_upgrade';
     public $title = 'Zume DB Upgrade';
     public $permissions = 'manage_options';
-    public $limit = 25;
+    public $limit = 50;
 
     /**  Singleton */
     private static $_instance = null;
@@ -135,7 +135,7 @@ class Zume_DB_Upgrade {
 
             $this->run_task( $result );
 
-            if ( $processed_count >= $this->limit ) {
+            if ( $processed_count > $this->limit ) {
                 break;
             }
         }
