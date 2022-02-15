@@ -44,30 +44,14 @@ class Zume_DB_Upgrade {
         }
         return self::$_instance;
     }
-    /**
-     * Constructor function.
-     * @access  public
-     * @since   0.1.0
-     */
     public function __construct() {
         if ( is_admin() ) {
             add_action( "admin_menu", array( $this, "register_menu" ) );
         }
-    } // End __construct()
-
-
-    /**
-     * Loads the subnav page
-     * @since 0.1
-     */
-    public function register_menu() {
-        add_menu_page( 'Zume DB Upgrade', 'Zume DB Upgrade', $this->permissions, $this->token, [ $this, 'content' ], 'dashicons-admin-generic', 59 );
     }
-
-    /**
-     * Builds page contents
-     * @since 0.1
-     */
+    public function register_menu() {
+        add_menu_page( 'Upgade Training Locations', 'Zume DB Upgrade', $this->permissions, $this->token, [ $this, 'content' ], 'dashicons-admin-generic', 59 );
+    }
     public function content() {
 
         if ( !current_user_can( $this->permissions ) ) { // manage dt is a permission that is specific to Disciple Tools and allows admins, strategists and dispatchers into the wp-admin
@@ -78,9 +62,10 @@ class Zume_DB_Upgrade {
         <!-- Box -->
         <table class="widefat striped">
             <thead>
+            <tr><th>Upgrade Training Locations from the meta_value array</th></tr>
             <tr>
                 <th><p style="max-width:450px"></p>
-                    <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade Ip Address Info</a></p>
+                    <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
                 </th>
             </tr>
             </thead>
@@ -104,12 +89,10 @@ class Zume_DB_Upgrade {
                     <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
                 </tr>
                 <script type="text/javascript">
-                    <!--
                     function nextpage() {
                         location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=0&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
                     }
                     setTimeout( "nextpage()", 1500 );
-                    //-->
                 </script>
                 <?php
             }
@@ -125,11 +108,20 @@ class Zume_DB_Upgrade {
         </table>
         <?php
     }
-
     public function run_loop( $step ){
         global $wpdb;
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" );
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A );
+
+        $results = $wpdb->get_results(
+            "SELECT p.ID as training_post_id, um.user_id, p.post_title, pm1.meta_value as zgroup, um.meta_value
+                    FROM wp_3_posts p
+                    LEFT JOIN wp_3_postmeta pm1 ON pm1.post_id=p.ID AND pm1.meta_key = 'zume_group_id'
+                    LEFT JOIN wp_usermeta um ON um.meta_key=pm1.meta_value
+                    WHERE p.post_type = 'trainings' AND pm1.meta_value IS NOT NULL
+                    LIMIT 100
+                    ;"
+            , ARRAY_A );
+
+        $total_count = count( $results );
 
         $loop_count = 0;
         $processed_count = 0;
@@ -140,10 +132,6 @@ class Zume_DB_Upgrade {
             }
 
             $processed_count++;
-
-//            if ( get_user_meta( $result['user_id'], 'zume_location_grid_from_ip', true ) ){ // repetition check
-//                continue;
-//            }
 
             $this->run_task( $result );
 
@@ -161,12 +149,10 @@ class Zume_DB_Upgrade {
             <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
         </tr>
         <script type="text/javascript">
-            <!--
             function nextpage() {
                 location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=<?php echo esc_attr( $loop_count ) ?>&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
             }
             setTimeout( "nextpage()", 1500 );
-            //-->
         </script>
         <?php
     }
@@ -176,59 +162,45 @@ class Zume_DB_Upgrade {
             return;
         }
 
-        $ip_results = unserialize( $result['meta_value'] );
         $user_id = $result['user_id'];
+        $group_key = $result['zgroup'];
+        $group = unserialize( $result['meta_value'] );
+        $training_post_id = $result['training_post_id'];
 
-        if ( isset( $ip_results['ip'] ) &&  ! empty( $ip_results['ip'] ) && isset( $ip_results['country_name'] ) &&  ! empty( $ip_results['country_name'] )  ) {
-            $country = DT_Ipstack_API::parse_raw_result( $ip_results, 'country_name' );
-            $region = DT_Ipstack_API::parse_raw_result( $ip_results, 'region_name' );
-            $city = DT_Ipstack_API::parse_raw_result( $ip_results, 'city' );
+        $user_ip_location = get_user_meta( $user_id, 'zume_location_grid_meta_from_ip', true );
+        $user_profile_location = get_user_meta( $user_id, 'location_grid_meta', true );
+        $user_recent_ip = get_user_meta( $user_id, 'zume_recent_ip', true );
 
-            $address = '';
-            if( ! empty($country) ) {
-                $address = $country;
-            }
-            if( ! empty($region) ) {
-                $address = $region . ', ' . $address;
-            }
-            if( ! empty($city) ) {
-                $address = $city . ', ' . $address;
-            }
-
-            update_user_meta( $user_id, 'zume_address_from_ip', $address ); // location grid id only
-
-            $location_grid_meta = DT_Ipstack_API::convert_ip_result_to_location_grid_meta( $ip_results );
-            update_user_meta( $user_id, 'zume_location_grid_meta_from_ip', $location_grid_meta ); // location grid meta array
-            update_user_meta( $user_id, 'zume_location_grid_from_ip', $location_grid_meta['grid_id'] ); // location grid id only
+        $training_post = DT_Posts::get_post( 'trainings', $training_post_id, false, false );
+        if ( is_wp_error( $training_post ) ) {
+            dt_write_log('Could not find training');
+            return;
         }
-        else {
-            $ip_address = get_user_meta( $user_id, 'zume_recent_ip', true );
-            $ip_results = DT_Ipstack_API::geocode_ip_address( $ip_address );
-            update_user_meta( $user_id, 'zume_raw_location_from_ip', $ip_results );
 
-            if ( class_exists( 'DT_Ipstack_API' ) ) {
-                $country = DT_Ipstack_API::parse_raw_result( $ip_results, 'country_name' );
-                $region = DT_Ipstack_API::parse_raw_result( $ip_results, 'region_name' );
-                $city = DT_Ipstack_API::parse_raw_result( $ip_results, 'city' );
+        dt_write_log('User ID');
+        dt_write_log($user_id);
+        dt_write_log('Training post');
+        dt_write_log($training_post);
+        dt_write_log('Group');
+        dt_write_log($group);
 
-                $address = '';
-                if( ! empty($country) ) {
-                    $address = $country;
-                }
-                if( ! empty($region) ) {
-                    $address = $region . ', ' . $address;
-                }
-                if( ! empty($city) ) {
-                    $address = $city . ', ' . $address;
-                }
 
-                update_user_meta( $user_id, 'zume_address_from_ip', $address ); // location grid id only
+        // skip the location if already set
+        if ( isset( $training_post['location_grid_meta'] ) && ! empty( $training_post['location_grid_meta'] ) ) {
+            return;
+        }
 
-                $location_grid_meta = DT_Ipstack_API::convert_ip_result_to_location_grid_meta( $ip_results );
-                update_user_meta( $user_id, 'zume_location_grid_meta_from_ip', $location_grid_meta ); // location grid meta array
-                update_user_meta( $user_id, 'zume_location_grid_from_ip', $location_grid_meta['grid_id'] ); // location grid id only
+        // set the location of the training group
+        if ( isset( $group['location_grid_meta']['lng'] ) && ! empty( $group['location_grid_meta']['lng'] ) ) {
+            // check if user provided group location
+            
 
-            }
+        } else if ( ! empty( $user_profile_location )  ) {
+            // check if user provided user location
+        } else if ( $user_ip_location ) {
+            // check if ip location already parsed
+        }  else if ( $user_recent_ip ) {
+            // check if ip address available to be parsed.
         }
 
     }
