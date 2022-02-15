@@ -62,7 +62,7 @@ class Zume_DB_Upgrade {
         <!-- Box -->
         <table class="widefat striped">
             <thead>
-            <tr><th>Upgrade Training Locations from the meta_value array</th></tr>
+            <tr><th>Upgrade Contact Locations from Zume user records</th></tr>
             <tr>
                 <th><p style="max-width:450px"></p>
                     <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
@@ -112,11 +112,10 @@ class Zume_DB_Upgrade {
         global $wpdb;
 
         $results = $wpdb->get_results(
-            "SELECT p.ID as training_post_id, um.user_id, p.post_title, pm1.meta_value as zgroup, um.meta_value
+            "SELECT p.ID as post_id, pm1.meta_value as user_id, p.post_title
                     FROM wp_3_posts p
-                    LEFT JOIN wp_3_postmeta pm1 ON pm1.post_id=p.ID AND pm1.meta_key = 'zume_group_id'
-                    LEFT JOIN wp_usermeta um ON um.meta_key=pm1.meta_value
-                    WHERE p.post_type = 'trainings' AND pm1.meta_value IS NOT NULL
+                    LEFT JOIN wp_3_postmeta pm1 ON pm1.post_id=p.ID AND pm1.meta_key = 'zume_training_id'
+                    WHERE p.post_type = 'contacts' AND pm1.meta_value IS NOT NULL
                     
                     ;"
             , ARRAY_A );
@@ -158,55 +157,28 @@ class Zume_DB_Upgrade {
     }
 
     public function run_task( $result ) {
-        if ( empty( $result['meta_value'] ) ){
-            return;
-        }
 
         $user_id = $result['user_id'];
-        $group_key = $result['zgroup'];
-        $group = unserialize( $result['meta_value'] );
-        $training_post_id = $result['training_post_id'];
+        $contact_post_id = $result['post_id'];
 
         $user_ip_location = get_user_meta( $user_id, 'zume_location_grid_meta_from_ip', true );
         $user_profile_location = get_user_meta( $user_id, 'location_grid_meta', true );
         $user_recent_ip = get_user_meta( $user_id, 'zume_recent_ip', true );
 
-        $training_post = DT_Posts::get_post( 'trainings', $training_post_id, false, false );
-        if ( is_wp_error( $training_post ) ) {
+        $contact_post = DT_Posts::get_post( 'contacts', $contact_post_id, false, false );
+        if ( is_wp_error( $contact_post ) ) {
             dt_write_log('Could not find training');
             return;
         }
 
-//        dt_write_log('User ID');
-//        dt_write_log($user_id);
-//        dt_write_log('Training post');
-//        dt_write_log($training_post);
-//        dt_write_log('Group');
-//        dt_write_log($group);
-
-
         // skip the location if already set
-        if ( isset( $training_post['location_grid_meta'] ) && ! empty( $training_post['location_grid_meta'] ) ) {
-//            dt_write_log('Has a location: ' . $training_post_id );
+        if ( isset( $contact_post['location_grid_meta'] ) && ! empty( $contact_post['location_grid_meta'] ) ) {
+//            dt_write_log('Has a location: ' . $contact_post_id );
             return;
         }
 
         // set the location of the training group
-        if ( isset( $group['location_grid_meta']['lng'] ) && ! empty( $group['location_grid_meta']['lng'] ) ) {
-            // check if user provided group location
-//            dt_write_log('$group[location_grid_meta][lng]');
-            $fields['location_grid_meta'] = [
-                "values" => [
-                    [
-                        'lng' => $group['location_grid_meta']['lng'],
-                        'lat' => $group['location_grid_meta']['lat'],
-                        'label' => $group['location_grid_meta']['label'],
-                        'level' => ''
-                    ]
-                ]
-            ];
-
-        } else if ( isset( $user_profile_location['lng'] ) && ! empty( $user_profile_location['lng'] ) ) {
+        if ( isset( $user_profile_location['lng'] ) && ! empty( $user_profile_location['lng'] ) ) {
             // check if user provided user location
 //            dt_write_log('$user_profile_location');
             $fields['location_grid_meta'] = [
@@ -241,15 +213,15 @@ class Zume_DB_Upgrade {
             return;
         }
 
-//        dt_write_log( $training_post_id );
+        dt_write_log( $contact_post_id );
 //        dt_write_log( $fields );
 
-        $record = DT_Posts::update_post( 'trainings', $training_post_id, $fields, false, false );
+        $record = DT_Posts::update_post( 'contacts', $contact_post_id, $fields, false, false );
         if ( ! is_wp_error( $record ) ) {
-            dt_write_log('Updated location: ' . $training_post_id );
+            dt_write_log('Updated location: ' . $contact_post_id );
 //            dt_write_log($record);
         } else {
-            dt_write_log('Failed to update record: ' . $training_post_id );
+            dt_write_log('Failed to update record: ' . $contact_post_id );
         }
 
 
