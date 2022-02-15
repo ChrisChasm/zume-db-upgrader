@@ -34,7 +34,7 @@ class Zume_DB_Upgrade {
     public $token = 'zume_db_upgrade';
     public $title = 'Zume DB Upgrade';
     public $permissions = 'manage_options';
-    public $limit = 50;
+    public $limit = 30;
 
     /**  Singleton */
     private static $_instance = null;
