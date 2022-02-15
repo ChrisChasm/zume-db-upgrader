@@ -117,7 +117,7 @@ class Zume_DB_Upgrade {
                     LEFT JOIN wp_3_postmeta pm1 ON pm1.post_id=p.ID AND pm1.meta_key = 'zume_group_id'
                     LEFT JOIN wp_usermeta um ON um.meta_key=pm1.meta_value
                     WHERE p.post_type = 'trainings' AND pm1.meta_value IS NOT NULL
-                    LIMIT 100
+                    
                     ;"
             , ARRAY_A );
 
@@ -177,31 +177,81 @@ class Zume_DB_Upgrade {
             return;
         }
 
-        dt_write_log('User ID');
-        dt_write_log($user_id);
-        dt_write_log('Training post');
-        dt_write_log($training_post);
-        dt_write_log('Group');
-        dt_write_log($group);
+//        dt_write_log('User ID');
+//        dt_write_log($user_id);
+//        dt_write_log('Training post');
+//        dt_write_log($training_post);
+//        dt_write_log('Group');
+//        dt_write_log($group);
 
 
         // skip the location if already set
         if ( isset( $training_post['location_grid_meta'] ) && ! empty( $training_post['location_grid_meta'] ) ) {
+//            dt_write_log('Has a location: ' . $training_post_id );
             return;
         }
 
         // set the location of the training group
         if ( isset( $group['location_grid_meta']['lng'] ) && ! empty( $group['location_grid_meta']['lng'] ) ) {
             // check if user provided group location
-            
+//            dt_write_log('$group[location_grid_meta][lng]');
+            $fields['location_grid_meta'] = [
+                "values" => [
+                    [
+                        'lng' => $group['location_grid_meta']['lng'],
+                        'lat' => $group['location_grid_meta']['lat'],
+                        'label' => $group['location_grid_meta']['label'],
+                        'level' => ''
+                    ]
+                ]
+            ];
 
-        } else if ( ! empty( $user_profile_location )  ) {
+        } else if ( isset( $user_profile_location['lng'] ) && ! empty( $user_profile_location['lng'] ) ) {
             // check if user provided user location
-        } else if ( $user_ip_location ) {
+//            dt_write_log('$user_profile_location');
+            $fields['location_grid_meta'] = [
+                "values" => [
+                    [
+                        'lng' => $user_profile_location['lng'],
+                        'lat' => $user_profile_location['lat'],
+                        'label' => $user_profile_location['label'],
+                        'level' => ''
+                    ]
+                ]
+            ];
+        } else if ( isset( $user_ip_location['lng'] ) && ! empty( $user_ip_location['lng'] ) ) {
             // check if ip location already parsed
+//            dt_write_log('$user_ip_location');
+            $fields['location_grid_meta'] = [
+                "values" => [
+                    [
+                        'lng' => $user_ip_location['lng'],
+                        'lat' => $user_ip_location['lat'],
+                        'label' => $user_ip_location['label'],
+                        'level' => ''
+                    ]
+                ]
+            ];
         }  else if ( $user_recent_ip ) {
             // check if ip address available to be parsed.
+            dt_write_log('Only has an ip address. Needs converted.');
+            return;
+        } else {
+            dt_write_log('No location info found');
+            return;
         }
+
+//        dt_write_log( $training_post_id );
+//        dt_write_log( $fields );
+
+        $record = DT_Posts::update_post( 'trainings', $training_post_id, $fields, false, false );
+        if ( ! is_wp_error( $record ) ) {
+            dt_write_log('Updated location: ' . $training_post_id );
+//            dt_write_log($record);
+        } else {
+            dt_write_log('Failed to update record: ' . $training_post_id );
+        }
+
 
     }
 
