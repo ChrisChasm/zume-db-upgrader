@@ -112,11 +112,11 @@ class Zume_DB_Upgrade {
         global $wpdb;
 
         $results = $wpdb->get_results(
-            "SELECT p.ID as post_id, pm1.meta_value as user_id, p.post_title
-                    FROM wp_3_posts p
-                    LEFT JOIN wp_3_postmeta pm1 ON pm1.post_id=p.ID AND pm1.meta_key = 'zume_training_id'
-                    WHERE p.post_type = 'contacts' AND pm1.meta_value IS NOT NULL
-                    
+            "SELECT pm.post_id, pm1.meta_value as location, pm2.meta_value as user_id
+                    FROM wp_3_postmeta pm
+                    LEFT JOIN wp_3_postmeta pm1 ON pm.post_id=pm1.post_id AND pm1.meta_key = 'location_grid_meta'
+                    LEFT JOIN wp_3_postmeta pm2 ON pm.post_id=pm2.post_id AND pm2.meta_key = 'zume_training_id'
+                    WHERE pm.meta_key = 'overall_status' AND pm.meta_value = 'registered_only' AND pm1.meta_value IS NULL AND pm2.meta_value IS NOT NULL
                     ;"
             , ARRAY_A );
 
@@ -159,6 +159,9 @@ class Zume_DB_Upgrade {
     public function run_task( $result ) {
 
         $user_id = $result['user_id'];
+        if ( empty( $user_id ) ) {
+            return;
+        }
         $contact_post_id = $result['post_id'];
 
         $user_ip_location = get_user_meta( $user_id, 'zume_location_grid_meta_from_ip', true );
