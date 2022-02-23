@@ -116,7 +116,7 @@ class Zume_DB_Upgrade {
                     FROM wp_3_postmeta pm
                     LEFT JOIN wp_3_postmeta pm1 ON pm.post_id=pm1.post_id AND pm1.meta_key = 'location_grid_meta'
                     LEFT JOIN wp_3_postmeta pm2 ON pm.post_id=pm2.post_id AND pm2.meta_key = 'zume_training_id'
-                    WHERE pm.meta_key = 'overall_status' AND pm.meta_value = 'registered_only' AND pm1.meta_value IS NULL AND pm2.meta_value IS NOT NULL
+                    WHERE pm.meta_key = 'overall_status' AND pm.meta_value = 'registered_only' AND pm1.meta_value IS NULL
                     ;"
             , ARRAY_A );
 
@@ -159,14 +159,7 @@ class Zume_DB_Upgrade {
     public function run_task( $result ) {
 
         $user_id = $result['user_id'];
-        if ( empty( $user_id ) ) {
-            return;
-        }
         $contact_post_id = $result['post_id'];
-
-        $user_ip_location = get_user_meta( $user_id, 'zume_location_grid_meta_from_ip', true );
-        $user_profile_location = get_user_meta( $user_id, 'location_grid_meta', true );
-        $user_recent_ip = get_user_meta( $user_id, 'zume_recent_ip', true );
 
         $contact_post = DT_Posts::get_post( 'contacts', $contact_post_id, false, false );
         if ( is_wp_error( $contact_post ) ) {
@@ -174,59 +167,40 @@ class Zume_DB_Upgrade {
             return;
         }
 
-        // skip the location if already set
-        if ( isset( $contact_post['location_grid_meta'] ) && ! empty( $contact_post['location_grid_meta'] ) ) {
-//            dt_write_log('Has a location: ' . $contact_post_id );
-            return;
+//        dt_write_log($contact_post);
+        if ( isset( $contact_post['training_participant'], $contact_post['training_leader'] ) ) {
+            if ( ! empty( $contact_post['training_participant'] ) ) {
+
+                $training_id = $contact_post['training_participant'][0]['ID'];
+                $training_post = DT_Posts::get_post( 'trainings', $training_id, false, false );
+
+                if ( isset( $training_post['location_grid_meta'], $training_post['location_grid_meta'][0]['lng'], $training_post['location_grid_meta'][0]['lat'], $training_post['location_grid_meta'][0]['label'] ) ) {
+
+                    $fields['location_grid_meta'] = [
+                        "values" => [
+                            [
+                                'lng' => $training_post['location_grid_meta'][0]['lng'],
+                                'lat' => $training_post['location_grid_meta'][0]['lat'],
+                                'label' => $training_post['location_grid_meta'][0]['label'],
+                                'level' => ''
+                            ]
+                        ]
+                    ];
+
+                    $record = DT_Posts::update_post( 'contacts', $contact_post_id, $fields, false, false );
+                    if ( ! is_wp_error( $record ) ) {
+                        dt_write_log('Updated location: ' . $contact_post_id );
+                        return;
+                    } else {
+                        dt_write_log('Failed to update record: ' . $contact_post_id );
+                        return;
+                    }
+
+                }
+            }
         }
-
-        // set the location of the training group
-        if ( isset( $user_profile_location['lng'] ) && ! empty( $user_profile_location['lng'] ) ) {
-            // check if user provided user location
-//            dt_write_log('$user_profile_location');
-            $fields['location_grid_meta'] = [
-                "values" => [
-                    [
-                        'lng' => $user_profile_location['lng'],
-                        'lat' => $user_profile_location['lat'],
-                        'label' => $user_profile_location['label'],
-                        'level' => ''
-                    ]
-                ]
-            ];
-        } else if ( isset( $user_ip_location['lng'] ) && ! empty( $user_ip_location['lng'] ) ) {
-            // check if ip location already parsed
-//            dt_write_log('$user_ip_location');
-            $fields['location_grid_meta'] = [
-                "values" => [
-                    [
-                        'lng' => $user_ip_location['lng'],
-                        'lat' => $user_ip_location['lat'],
-                        'label' => $user_ip_location['label'],
-                        'level' => ''
-                    ]
-                ]
-            ];
-        }  else if ( $user_recent_ip ) {
-            // check if ip address available to be parsed.
-            dt_write_log('Only has an ip address. Needs converted.');
-            return;
-        } else {
-            dt_write_log('No location info found');
-            return;
-        }
-
-        dt_write_log( $contact_post_id );
-//        dt_write_log( $fields );
-
-        $record = DT_Posts::update_post( 'contacts', $contact_post_id, $fields, false, false );
-        if ( ! is_wp_error( $record ) ) {
-            dt_write_log('Updated location: ' . $contact_post_id );
-//            dt_write_log($record);
-        } else {
-            dt_write_log('Failed to update record: ' . $contact_post_id );
-        }
-
+        dt_write_log( 'failed to geolocate: ' . $result['post_id'] );
+        return;
 
     }
 
