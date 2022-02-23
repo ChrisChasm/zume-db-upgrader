@@ -167,7 +167,6 @@ class Zume_DB_Upgrade {
             return;
         }
 
-//        dt_write_log($contact_post);
         if ( isset( $contact_post['training_participant'], $contact_post['training_leader'] ) ) {
             if ( ! empty( $contact_post['training_participant'] ) ) {
 
@@ -196,7 +195,15 @@ class Zume_DB_Upgrade {
                         return;
                     }
 
+                } else {
+                    dt_write_log('Failed to get location_data: ' . $training_id );
+                    return;
                 }
+
+            }
+            else {
+                dt_write_log('No training participant');
+                return;
             }
         }
         dt_write_log( 'failed to geolocate: ' . $result['post_id'] );
