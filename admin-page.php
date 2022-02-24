@@ -61,7 +61,7 @@ class Zume_DB_Upgrade {
      * @since 0.1
      */
     public function register_menu() {
-        add_menu_page( 'Zume DB Upgrade', 'Zume DB Upgrade', $this->permissions, $this->token, [ $this, 'content' ], 'dashicons-admin-generic', 59 );
+        add_menu_page( 'Upgrade ip locations for users', 'Zume DB Upgrade', $this->permissions, $this->token, [ $this, 'content' ], 'dashicons-admin-generic', 59 );
     }
 
     /**
@@ -78,6 +78,11 @@ class Zume_DB_Upgrade {
         <!-- Box -->
         <table class="widefat striped">
             <thead>
+            <tr>
+                <th>
+                    <p>Upgrade ip location for users</p>
+                </th>
+            </tr>
             <tr>
                 <th><p style="max-width:450px"></p>
                     <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
@@ -173,21 +178,16 @@ class Zume_DB_Upgrade {
             <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
         </tr>
         <script type="text/javascript">
-            <!--
             function nextpage() {
                 location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=<?php echo esc_attr( $loop_count ) ?>&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
             }
             setTimeout( "nextpage()", 1500 );
-            //-->
         </script>
         <?php
     }
 
     public function run_task( $result ) {
-
-        /* @todo insert upgrade task */
-
-
+        dt_write_log( $result['training_post_id'] );
     }
 
     /**
