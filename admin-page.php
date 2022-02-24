@@ -109,12 +109,10 @@ class Zume_DB_Upgrade {
                     <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
                 </tr>
                 <script type="text/javascript">
-                    <!--
                     function nextpage() {
                         location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=0&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
                     }
                     setTimeout( "nextpage()", 1500 );
-                    //-->
                 </script>
                 <?php
             }
