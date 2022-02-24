@@ -79,6 +79,11 @@ class Zume_DB_Upgrade {
         <table class="widefat striped">
             <thead>
             <tr>
+                <th>
+                    <p>Title</p>
+                </th>
+            </tr>
+            <tr>
                 <th><p style="max-width:450px"></p>
                     <p><a class="button" id="upgrade_button" href="<?php echo esc_url( trailingslashit( admin_url() ) ) ?>admin.php?page=<?php echo esc_attr( $this->token ) ?>&loop=true" disabled="true">Upgrade</a></p>
                 </th>
