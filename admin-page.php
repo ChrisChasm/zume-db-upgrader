@@ -104,12 +104,10 @@ class Zume_DB_Upgrade {
                     <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
                 </tr>
                 <script type="text/javascript">
-                    <!--
                     function nextpage() {
                         location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=0&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
                     }
                     setTimeout( "nextpage()", 1500 );
-                    //-->
                 </script>
                 <?php
             }
@@ -132,11 +130,9 @@ class Zume_DB_Upgrade {
          * it will start a new loop sending the new start number.
          */
         global $wpdb;
-        // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
         // Get all records to process
         $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
-
+        $total_count = count($results);
         $loop_count = 0;
         $processed_count = 0;
         foreach( $results as $index => $result ) {
@@ -154,7 +150,7 @@ class Zume_DB_Upgrade {
 
             $this->run_task( $result );
 
-            if ( $processed_count > 100 ) {
+            if ( $processed_count > $this->limit ) {
                 break;
             }
         }
@@ -168,12 +164,10 @@ class Zume_DB_Upgrade {
             <td><img src="<?php echo esc_url( get_theme_file_uri() ) ?>/spinner.svg" width="30px" alt="spinner" /></td>
         </tr>
         <script type="text/javascript">
-            <!--
             function nextpage() {
                 location.href = "<?php echo admin_url() ?>admin.php?page=<?php echo esc_attr( $this->token )  ?>&loop=true&step=<?php echo esc_attr( $loop_count ) ?>&nonce=<?php echo wp_create_nonce( 'loop'.get_current_user_id() ) ?>";
             }
             setTimeout( "nextpage()", 1500 );
-            //-->
         </script>
         <?php
     }
