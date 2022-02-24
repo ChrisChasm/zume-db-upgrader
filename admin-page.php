@@ -186,9 +186,28 @@ class Zume_DB_Upgrade {
             dt_write_log('no meta_value');
         }
         $meta_value = unserialize( $result['meta_value'] );
-        if ( isset( $meta_value['ip_location_grid_meta']['lng'] ) ) {
+        if ( isset( $meta_value['ip_location_grid_meta']['lng'] ) && ! empty( $meta_value['ip_location_grid_meta']['lng'] ) ) {
             dt_write_log('has data');
-            dt_write_log($meta_value['ip_location_grid_meta']);
+//            dt_write_log($meta_value['ip_location_grid_meta']);
+
+            $fields['location_grid_meta'] = [
+                "values" => [
+                    [
+                        'lng' => $meta_value['ip_location_grid_meta']['lng'],
+                        'lat' => $meta_value['ip_location_grid_meta']['lat'],
+                        'label' => $meta_value['ip_location_grid_meta']['label'],
+                        'level' => ''
+                    ]
+                ]
+            ];
+
+
+            $record = DT_Posts::update_post( 'trainings', $result['training_post_id'] , $fields, false, false );
+            if ( ! is_wp_error( $record ) ) {
+                dt_write_log('Updated location: ' . $result['training_post_id'] );
+            } else {
+                dt_write_log('Failed to update record: ' . $result['training_post_id'] );
+            }
 
             
 
