@@ -132,10 +132,15 @@ class Zume_DB_Upgrade {
          * it will start a new loop sending the new start number.
          */
         global $wpdb;
-        // Get total count of records to process
-        $total_count = $wpdb->get_var( "SELECT COUNT(*) as count FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'" ); // @todo replace
         // Get all records to process
-        $results = $wpdb->get_results( "SELECT * FROM $wpdb->usermeta WHERE meta_key = 'zume_raw_location_from_ip'", ARRAY_A ); // @todo replace
+        $results = $wpdb->get_results(
+            "SELECT p.ID as training_post_id
+                    FROM wp_3_posts p
+                    LEFT JOIN wp_3_postmeta pm ON pm.post_id=p.ID AND pm.meta_key = 'location_grid_meta'
+                    WHERE p.post_type = 'trainings' AND pm.meta_value IS NULL"
+            , ARRAY_A ); // @todo replace
+
+        $total_count = count($results);
 
         $loop_count = 0;
         $processed_count = 0;
