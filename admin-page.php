@@ -137,9 +137,11 @@ class Zume_DB_Upgrade {
         global $wpdb;
         // Get all records to process
         $results = $wpdb->get_results(
-            "SELECT p.ID as training_post_id
+            "SELECT p.ID as training_post_id, pm1.meta_value as user_id, um.*
                     FROM wp_3_posts p
                     LEFT JOIN wp_3_postmeta pm ON pm.post_id=p.ID AND pm.meta_key = 'location_grid_meta'
+                    LEFT JOIN wp_3_postmeta pm1 ON p.ID=pm1.post_id AND pm1.meta_key = 'zume_group_id'
+                    LEFT JOIN wp_usermeta um ON pm1.meta_value=um.meta_key
                     WHERE p.post_type = 'trainings' AND pm.meta_value IS NULL"
             , ARRAY_A ); // @todo replace
 
@@ -155,14 +157,9 @@ class Zume_DB_Upgrade {
 
             $processed_count++;
 
-            // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ false ){
-                continue;
-            }
-
             $this->run_task( $result );
 
-            if ( $processed_count > 100 ) {
+            if ( $processed_count > $this->limit ) {
                 break;
             }
         }
@@ -185,7 +182,18 @@ class Zume_DB_Upgrade {
     }
 
     public function run_task( $result ) {
-        dt_write_log( $result['training_post_id'] );
+        if ( empty( $result['meta_value'] ) ) {
+            dt_write_log('no meta_value');
+        }
+        $meta_value = unserialize( $result['meta_value'] );
+        if ( isset( $meta_value['ip_location_grid_meta']['lng'] ) ) {
+            dt_write_log('has data');
+            dt_write_log($meta_value['ip_location_grid_meta']);
+
+            
+
+        }
+
     }
 
     /**
