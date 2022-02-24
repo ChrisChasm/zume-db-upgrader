@@ -148,11 +148,6 @@ class Zume_DB_Upgrade {
 
             $processed_count++;
 
-            // check if already upgraded. if so, skip. Insert the marker to check for.
-            if ( /* @todo insert marker test here*/ false ){
-                continue;
-            }
-
             $this->run_task( $result );
 
             if ( $processed_count > $this->limit ) {
